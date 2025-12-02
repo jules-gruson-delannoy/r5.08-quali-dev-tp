@@ -1,6 +1,6 @@
-### **EXO 1:**
+#### **EXO 1:**
 
-## **Tache 1 Question**
+### **Tache 1 Question**
 
 **Q1** - les domains principaux sont : Panier d'achat et Traitement des commandes
 
