@@ -1,4 +1,3 @@
-
 # Development Quality - Order Flow
 
 A comprehensive DDD, CQRS, event-driven application for customer's order and stock management.
@@ -112,4 +111,3 @@ TODO
 - Thibaud FAURIE :
   - [@thibaud.faurie (Private GitLab)](https://gitlab.cloud0.openrichmedia.org/thibaud.faurie)
   - [@thibaud-faurie (LinkedIn)](https://www.linkedin.com/in/thibaud-faurie/)
-
