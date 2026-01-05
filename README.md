@@ -44,6 +44,50 @@ Il ne faut pas faire cette tâche
 
 ## Tache 1
 
-Il faut compléter la javadoc (pas fait)
+Javadoc faite
 
-## Tache 2
+## Tache 5 Question
+
+**Q1** 
+Tests unitaires : vérifient qu’une fonction ou classe seule fonctionne correctement. Rapides et isolés (souvent avec des mocks).
+
+Tests d’intégration : vérifient que plusieurs modules ou composants fonctionnent correctement ensemble. Plus lents et moins isolés.
+
+En résumé : unitaires = code isolé, intégration = interaction entre modules.
+
+**Q2**
+Non, viser 100 % de couverture n’est pas pertinent :
+
+Couverture n'est pas égal à qualité : exécuter du code ne garantit pas qu’il est bien testé.
+
+Coût élevé : tester du code trivial prend du temps pour peu de valeur.
+
+Maintenance difficile : tests inutiles deviennent un fardeau.
+
+Priorisation : mieux vaut se concentrer sur les parties critiques du code.
+
+**Q3**
+Une architecture en couches d’oignon apporte plusieurs avantages pour les tests :
+
+Isolation facile : chaque couche peut être testée séparément (unitaires).
+
+Tests d’intégration ciblés : les dépendances sont inversées, donc on peut simuler facilement les couches externes.
+
+Maintenance simplifiée : les changements dans une couche ont un impact minimal sur les tests des autres couches.
+
+En bref, plus de modularité c'est des tests plus simples et fiables.
+
+**Q4**
+infra : infrastructure technique (accès à la base, services externes, configuration).
+
+application : logique métier orchestrant les cas d’usage, souvent sans dépendances directes à la persistance ou au web.
+
+jpa : classes liées à la persistance via JPA/Hibernate (entités, repositories).
+
+web : interface web / API REST (contrôleurs, endpoints).
+
+client : code pour consommer des services externes (API externes, microservices).
+
+model : objets métier ou DTO partagés (entités, data transfer objects).
+
+En résumé : infra = technique, application = logique, jpa/web/client = interface, model = données.
