@@ -16,7 +16,38 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 /**
- * TODO: Complete Javadoc
+ * Représente l’agrégat métier « Produit » dans le domaine.
+ * <p>
+ * Cette classe encapsule les règles métier et l’état d’un produit, notamment :
+ * <ul>
+ *   <li>Identifiant du produit ({@link ProductId}) et SKU ({@link SkuId})</li>
+ *   <li>Nom et description du produit</li>
+ *   <li>Statut du cycle de vie ({@link ProductLifecycle})</li>
+ *   <li>Version optimiste pour le contrôle de concurrence</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * La classe fournit des méthodes pour modifier l’état du produit tout en
+ * générant des {@link EventEnvelope} pour chaque modification afin de
+ * permettre l’Event Sourcing et la projection des vues.
+ * </p>
+ *
+ * <h2>Règles métier :</h2>
+ * <ul>
+ *   <li>Un produit actif peut être mis à jour (nom et description)</li>
+ *   <li>Un produit retiré ne peut plus être mis à jour</li>
+ *   <li>La mise à jour d’un produit valide déclenche un événement correspondant</li>
+ *   <li>Chaque modification incrémente la version optimiste</li>
+ * </ul>
+ *
+ * <h2>Exemple d’utilisation :</h2>
+ * <pre>{@code
+ * Product product = Product.create("Laptop", "High-end laptop", new SkuId("123456789"));
+ * EventEnvelope<ProductNameUpdated> nameUpdatedEvent = product.updateName("Gaming Laptop");
+ * EventEnvelope<ProductDescriptionUpdated> descUpdatedEvent = product.updateDescription("High-end gaming laptop");
+ * EventEnvelope<ProductRetired> retiredEvent = product.retire();
+ * }</pre>
  */
 
 @Getter
@@ -51,6 +82,16 @@ public class Product {
         this.version = version;
     }
 
+    /**
+     * Crée un nouveau produit actif avec une version initiale.
+     *
+     * @param name le nom du produit
+     * @param description la description du produit
+     * @param skuId le SKU du produit
+     * @return le produit créé
+     * @throws ConstraintViolationException si le produit n’est pas valide
+     */
+
     public static Product create(
             String name,
             String description,
@@ -69,6 +110,14 @@ public class Product {
         return new ProductBuilder();
     }
 
+    /**
+     * Met à jour le nom du produit.
+     *
+     * @param name le nouveau nom
+     * @return un {@link EventEnvelope} contenant l’événement {@link ProductNameUpdated}
+     * @throws IllegalStateException si le produit est retiré
+     * @throws ConstraintViolationException si le produit devient invalide
+     */
     public EventEnvelope<ProductNameUpdated> updateName(String name) {
         if (!canUpdateDetails(this)) {
             throw new IllegalStateException("Cannot update a retired product");

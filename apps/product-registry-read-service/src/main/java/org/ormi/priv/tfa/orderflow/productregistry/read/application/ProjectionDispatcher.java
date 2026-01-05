@@ -18,17 +18,29 @@ import jakarta.resource.spi.IllegalStateException;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Dispatcher qui applique les événements produits aux projections de lecture.
+ * <p>
+ * Cette classe écoute les événements du produit et utilise les projecteurs
+ * pour mettre à jour les vues {@link ProductView}. Elle diffuse ensuite
+ * les changements via {@link ProductEventBroadcaster}.
+ * </p>
  */
-
 @ApplicationScoped
 public class ProjectionDispatcher {
+
     private static final String PRODUCT_AGGREGATE_TYPE = Product.class.getSimpleName();
 
     private final Instance<ProductViewProjector> productViewProjector;
     private final ProductViewRepository productViewRepository;
     private final ProductEventBroadcaster productEventBroadcaster;
 
+    /**
+     * Constructeur avec injection des dépendances.
+     *
+     * @param productViewProjector instance des projecteurs de vues produit
+     * @param productViewRepository repository des vues produit
+     * @param productEventBroadcaster diffuseur d’événements produit
+     */
     @Inject
     public ProjectionDispatcher(
             Instance<ProductViewProjector> productViewProjector,
@@ -39,6 +51,17 @@ public class ProjectionDispatcher {
         this.productEventBroadcaster = productEventBroadcaster;
     }
 
+    /**
+     * Applique un événement produit à sa projection correspondante.
+     * <p>
+     * Si le type d’agrégat correspond à un produit, la projection est
+     * mise à jour, persistée et l’événement est diffusé via le broadcaster.
+     * </p>
+     *
+     * @param event événement produit enveloppé
+     * @return résultat de la projection {@link ProjectionResult}
+     * @throws IllegalStateException si le type d’agrégat ne correspond pas à un produit
+     */
     @Transactional
     public ProjectionResult<ProductView> dispatch(ProductEventV1Envelope<?> event) throws IllegalStateException {
         if (event.aggregateType().equals(PRODUCT_AGGREGATE_TYPE)) {

@@ -12,20 +12,56 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 /**
- * TODO: Complete Javadoc
+ * Représente un résumé (vue simplifiée) d’un produit pour les lectures et listes paginées.
+ * <p>
+ * Cette classe encapsule les informations essentielles d’un produit, telles que :
+ * </p>
+ * <ul>
+ *     <li>Identifiant unique du produit ({@link ProductId})</li>
+ *     <li>Identifiant SKU ({@link SkuId})</li>
+ *     <li>Nom du produit</li>
+ *     <li>Statut du cycle de vie ({@link ProductLifecycle})</li>
+ *     <li>Nombre de catalogues associés au produit</li>
+ * </ul>
+ *
+ * <h2>Responsabilités :</h2>
+ * <ul>
+ *     <li>Servir dans les projections de type {@link ProductView} pour les listes simplifiées ou tableaux de bord.</li>
+ *     <li>Fournir un modèle immuable validé via Jakarta Validation pour éviter les données incorrectes.</li>
+ *     <li>Être facilement construite via le {@link ProductSummaryBuilder} pour garantir la validité.</li>
+ * </ul>
+ *
+ * <h2>Exemple d’utilisation :</h2>
+ * <pre>{@code
+ * ProductSummary summary = ProductSummary.Builder()
+ *      .id(new ProductId(UUID.randomUUID()))
+ *      .skuId(new SkuId("ABC-12345"))
+ *      .name("Produit Exemple")
+ *      .status(ProductLifecycle.ACTIVE)
+ *      .catalogs(3)
+ *      .build();
+ * }</pre>
+ *
+ * <p>
+ * La validation automatique garantit que les champs obligatoires (@NotNull, @NotBlank)
+ * sont correctement renseignés. En cas de violation, une {@link ConstraintViolationException} est levée.
+ * </p>
  */
-
 @Getter
 public class ProductSummary {
     
     @NotNull
     private final ProductId id;
+    
     @NotNull
     private final SkuId skuId;
+    
     @NotBlank
     private final String name;
+    
     @NotNull
     private final ProductLifecycle status;
+    
     @NotNull
     private final Integer catalogs;
 
@@ -43,10 +79,17 @@ public class ProductSummary {
         this.catalogs = catalogs;
     }
 
+    /** Crée un nouveau builder pour construire une instance de {@link ProductSummary}. */
     public static ProductSummaryBuilder Builder() {
         return new ProductSummaryBuilder();
     }
 
+    /**
+     * Builder pour {@link ProductSummary}.
+     * <p>
+     * Garantit la validation des champs avant construction.
+     * </p>
+     */
     public static final class ProductSummaryBuilder {
         private ProductId id;
         private SkuId skuId;
@@ -79,6 +122,12 @@ public class ProductSummary {
             return this;
         }
 
+        /**
+         * Construit l’instance finale de {@link ProductSummary} après validation.
+         *
+         * @return une instance validée de {@link ProductSummary}
+         * @throws ConstraintViolationException si l’un des champs obligatoires est manquant ou invalide
+         */
         public ProductSummary build() {
             ProductSummary summary = new ProductSummary(id, skuId, name, status, catalogs);
             final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();

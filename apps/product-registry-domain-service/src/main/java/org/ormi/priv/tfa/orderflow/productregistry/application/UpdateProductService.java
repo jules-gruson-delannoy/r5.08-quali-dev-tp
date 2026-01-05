@@ -17,16 +17,26 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Service d’application pour mettre à jour les informations d’un produit.
+ * <p>
+ * Ce service gère la mise à jour du nom et de la description d’un produit,
+ * enregistre les événements de domaine et publie les événements via l’outbox.
+ * </p>
  */
-
 @ApplicationScoped
 public class UpdateProductService {
 
-    ProductRepository repository;
-    EventLogRepository eventLog;
-    OutboxRepository outbox;
+    private final ProductRepository repository;
+    private final EventLogRepository eventLog;
+    private final OutboxRepository outbox;
 
+    /**
+     * Constructeur avec injection des dépendances.
+     *
+     * @param repository repository pour gérer les produits
+     * @param eventLog repository pour l’enregistrement des événements
+     * @param outbox repository pour publier les événements externes
+     */
     @Inject
     public UpdateProductService(
         ProductRepository repository,
@@ -38,16 +48,19 @@ public class UpdateProductService {
         this.outbox = outbox;
     }
 
+    /**
+     * Met à jour le nom d’un produit existant.
+     *
+     * @param cmd commande contenant l’identifiant du produit et le nouveau nom
+     * @throws IllegalArgumentException si le produit n’est pas trouvé
+     */
     @Transactional
     public void handle(UpdateProductNameCommand cmd) throws IllegalArgumentException {
         Product product = repository.findById(cmd.productId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
         EventEnvelope<ProductNameUpdated> event = product.updateName(cmd.newName());
-        // Save domain object
         repository.save(product);
-        // Append event to event log
         final EventLogEntity persistedEvent = eventLog.append(event);
-        // Publish event to outbox
         outbox.publish(
             OutboxEntity.Builder()
                 .sourceEvent(persistedEvent)
@@ -55,16 +68,19 @@ public class UpdateProductService {
         );
     }
 
+    /**
+     * Met à jour la description d’un produit existant.
+     *
+     * @param cmd commande contenant l’identifiant du produit et la nouvelle description
+     * @throws IllegalArgumentException si le produit n’est pas trouvé
+     */
     @Transactional
     public void handle(UpdateProductDescriptionCommand cmd) throws IllegalArgumentException {
         Product product = repository.findById(cmd.productId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
         EventEnvelope<ProductDescriptionUpdated> event = product.updateDescription(cmd.newDescription());
-        // Save domain object
         repository.save(product);
-        // Append event to event log
         final EventLogEntity persistedEvent = eventLog.append(event);
-        // Publish event to outbox
         outbox.publish(
             OutboxEntity.Builder()
                 .sourceEvent(persistedEvent)

@@ -9,25 +9,45 @@ import io.smallrye.mutiny.subscription.MultiEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * TODO: Complete Javadoc
+ * Service de diffusion des événements produits vers les consommateurs.
+ * <p>
+ * Permet de diffuser des {@link ProductStreamElementDto} à tous les
+ * abonnés en temps réel, en utilisant des flux réactifs {@link Multi}.
+ * </p>
+ * <p>
+ * Les abonnés sont automatiquement retirés lorsqu’ils se désabonnent,
+ * ce qui évite les fuites de mémoire.
+ * </p>
  */
-
 @ApplicationScoped
 public class ProductEventBroadcaster {
 
     private final CopyOnWriteArrayList<MultiEmitter<? super ProductStreamElementDto>> emitters = new CopyOnWriteArrayList<>();
 
+    /**
+     * Diffuse un élément de flux à tous les abonnés actifs.
+     *
+     * @param element élément de flux à diffuser
+     */
     public void broadcast(ProductStreamElementDto element) {
         emitters.forEach(emitter -> emitter.emit(element));
     }
 
+    /**
+     * Fournit un flux réactif {@link Multi} pour recevoir les événements produits.
+     * <p>
+     * Les nouveaux abonnés sont ajoutés à la liste des émetteurs et
+     * seront automatiquement retirés lors de la terminaison de leur souscription.
+     * </p>
+     *
+     * @return flux réactif des éléments de produit
+     */
     public Multi<ProductStreamElementDto> stream() {
         return Multi.createFrom().emitter(emitter -> {
             emitters.add(emitter);
             // TODO: log a debug, "New emitter added"
 
-            // TODO: Hey! remove emitters, my RAM is melting! (and log for debugging)
-            // TODO: TODO
+            // Retire automatiquement l’émetteur lors de la terminaison
             emitter.onTermination(() -> emitters.remove(emitter));
         });
     }

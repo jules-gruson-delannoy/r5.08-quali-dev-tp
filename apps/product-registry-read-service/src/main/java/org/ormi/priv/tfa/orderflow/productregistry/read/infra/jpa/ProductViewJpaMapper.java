@@ -20,28 +20,58 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * TODO: Complete Javadoc
+ * Mapper MapStruct pour convertir entre {@link ProductView} et {@link ProductViewEntity}.
+ * <p>
+ * Permet de sérialiser les listes d’événements et de références de catalogues en JSON
+ * pour la persistance, et de les désérialiser lors de la lecture.
+ * </p>
+ * <p>
+ * Utilise {@link ProductIdMapper} et {@link SkuIdMapper} pour gérer les identifiants.
+ * L’instance de {@link ObjectMapper} est injectée via le contexte MapStruct.
+ * </p>
  */
-
 @Mapper(
     componentModel = "cdi",
     unmappedTargetPolicy = ReportingPolicy.IGNORE,
     injectionStrategy = InjectionStrategy.CONSTRUCTOR,
-    uses = {ProductIdMapper.class, SkuIdMapper.class, }
+    uses = {ProductIdMapper.class, SkuIdMapper.class }
 )
 public interface ProductViewJpaMapper {
 
+    /**
+     * Convertit une vue domaine {@link ProductView} en entité JPA {@link ProductViewEntity}.
+     *
+     * @param productView vue domaine
+     * @param objectMapper mapper JSON pour sérialisation
+     * @return entité JPA correspondante
+     */
     @Mapping(target = "events", expression = "java(productViewEventListToJsonNode(productView.getEvents(), objectMapper))")
     @Mapping(target = "catalogs", expression = "java(productViewCatalogRefListToJsonNode(productView.getCatalogs(), objectMapper))")
-    public ProductViewEntity toEntity(ProductView productView, @Context ObjectMapper objectMapper);
+    ProductViewEntity toEntity(ProductView productView, @Context ObjectMapper objectMapper);
 
+    /**
+     * Convertit une entité JPA {@link ProductViewEntity} en vue domaine {@link ProductView}.
+     *
+     * @param entity entité JPA
+     * @param objectMapper mapper JSON pour désérialisation
+     * @return vue domaine correspondante
+     */
     @Mapping(target = "events", expression = "java(jsonNodeToProductViewEventList(entity.getEvents(), objectMapper))")
     @Mapping(target = "catalogs", expression = "java(jsonNodeToProductViewCatalogRefList(entity.getCatalogs(), objectMapper))")
-    public ProductView toDomain(ProductViewEntity entity, @Context ObjectMapper objectMapper);
+    ProductView toDomain(ProductViewEntity entity, @Context ObjectMapper objectMapper);
 
+    /**
+     * Met à jour une entité JPA existante à partir d’une vue domaine.
+     *
+     * @param productView vue domaine
+     * @param entity entité JPA à mettre à jour
+     * @param objectMapper mapper JSON pour sérialisation
+     */
     @Mapping(target = "events", expression = "java(productViewEventListToJsonNode(productView.getEvents(), objectMapper))")
     @Mapping(target = "catalogs", expression = "java(productViewCatalogRefListToJsonNode(productView.getCatalogs(), objectMapper))")
-    public void updateEntity(ProductView productView, @MappingTarget ProductViewEntity entity, @Context ObjectMapper objectMapper);
+    void updateEntity(ProductView productView, @MappingTarget ProductViewEntity entity, @Context ObjectMapper objectMapper);
+
+    // === JSON helpers ===
 
     default JsonNode productViewEventListToJsonNode(List<ProductViewEvent> events, @Context ObjectMapper om) {
         return om.valueToTree(events);
@@ -51,7 +81,6 @@ public interface ProductViewJpaMapper {
         return om.valueToTree(catalogRefs);
     }
 
-    // === JSON deserialization helpers ===
     default List<ProductViewEvent> jsonNodeToProductViewEventList(JsonNode node, @Context ObjectMapper om) {
         try {
             return om.readValue(

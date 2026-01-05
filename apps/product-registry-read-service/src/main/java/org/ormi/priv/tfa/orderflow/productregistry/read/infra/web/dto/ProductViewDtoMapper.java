@@ -28,26 +28,49 @@ import org.ormi.priv.tfa.orderflow.kernel.product.views.ProductView.ProductViewC
 import org.ormi.priv.tfa.orderflow.kernel.product.views.ProductView.ProductViewEvent;
 
 /**
- * TODO: Complete Javadoc
+ * Mapper MapStruct pour convertir les vues de produit {@link ProductView} vers les DTOs
+ * REST {@link ProductViewDto} exposés par l’API de lecture.
+ * <p>
+ * Gère la conversion des événements et des références de catalogues, ainsi que des types
+ * d’événements, pour fournir une représentation cohérente côté API.
+ * </p>
  */
-
-@Mapper(componentModel = "cdi", builder = @Builder(disableBuilder = false), uses = {
+@Mapper(
+    componentModel = "cdi",
+    builder = @Builder(disableBuilder = false),
+    uses = {
         ProductIdMapper.class,
         SkuIdMapper.class,
         ProductViewDtoMapper.ProductViewDtoEventMapper.class,
         ProductViewDtoMapper.ProductViewDtoCatalogMapper.class
-}, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    },
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface ProductViewDtoMapper {
-    public ProductViewDto toDto(ProductView productView);
 
-    @Mapper(componentModel = "cdi", builder = @Builder(disableBuilder = false), unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {
-            ProductEventTypeMapper.class, ProductViewDtoEventMapper.ProductViewDtoPayloadMapper.class
-    })
-    public interface ProductViewDtoEventMapper {
+    /** Convertit une vue domaine {@link ProductView} en DTO {@link ProductViewDto} */
+    ProductViewDto toDto(ProductView productView);
+
+    /**
+     * Mapper pour les événements d’un produit {@link ProductViewEvent} vers {@link ProductViewDtoEvent}.
+     */
+    @Mapper(
+        componentModel = "cdi",
+        builder = @Builder(disableBuilder = false),
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        uses = { ProductEventTypeMapper.class, ProductViewDtoEventMapper.ProductViewDtoPayloadMapper.class }
+    )
+    interface ProductViewDtoEventMapper {
+
+        /** Convertit un événement domaine en DTO */
         ProductViewDtoEvent toDto(ProductViewEvent event);
 
+        /**
+         * Mapper pour les payloads d’événements vers les DTOs correspondants.
+         */
         @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-        public interface ProductViewDtoPayloadMapper {
+        interface ProductViewDtoPayloadMapper {
+
             ProductRegisteredPayloadDto toDto(ProductRegisteredPayload payload);
 
             ProductNameUpdatedPayloadDto toDto(ProductNameUpdatedPayload payload);
@@ -56,35 +79,48 @@ public interface ProductViewDtoMapper {
 
             ProductRetiredPayloadDto toDto(Empty payload);
 
-            // 👇 Dispatcher for MapStruct (handles interface→interface)
+            /**
+             * Dispatcher pour MapStruct permettant de mapper une interface générique
+             * {@link DomainEventPayload} vers le DTO spécifique correspondant.
+             */
             default ProductViewEventDtoPayload map(DomainEventPayload payload) {
-                if (payload == null)
-                    return null;
-                if (payload instanceof ProductRegisteredPayload p)
-                    return toDto(p);
-                if (payload instanceof ProductNameUpdatedPayload p)
-                    return toDto(p);
-                if (payload instanceof ProductDescriptionUpdatedPayload p)
-                    return toDto(p);
-                if (payload instanceof ProductEventV1Payload.Empty p)
-                    return toDto(p);
+                if (payload == null) return null;
+                if (payload instanceof ProductRegisteredPayload p) return toDto(p);
+                if (payload instanceof ProductNameUpdatedPayload p) return toDto(p);
+                if (payload instanceof ProductDescriptionUpdatedPayload p) return toDto(p);
+                if (payload instanceof ProductEventV1Payload.Empty p) return toDto(p);
                 throw new IllegalArgumentException("Unknown payload type: " + payload.getClass());
             }
         }
     }
 
-    @Mapper(componentModel = "cdi", builder = @Builder(disableBuilder = false), unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    public interface ProductViewDtoCatalogMapper {
+    /**
+     * Mapper pour les références de catalogues {@link ProductViewCatalogRef} vers DTO {@link ProductViewDtoCatalog}.
+     */
+    @Mapper(
+        componentModel = "cdi",
+        builder = @Builder(disableBuilder = false),
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+    )
+    interface ProductViewDtoCatalogMapper {
         ProductViewDtoCatalog toDto(ProductViewCatalogRef catalog);
     }
 
-    @Mapper(componentModel = "cdi", builder = @Builder(disableBuilder = false), unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    public interface ProductEventTypeMapper {
+    /**
+     * Mapper pour les types d’événements {@link ProductEventType} vers {@link ProductViewDtoEventType}.
+     */
+    @Mapper(
+        componentModel = "cdi",
+        builder = @Builder(disableBuilder = false),
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+    )
+    interface ProductEventTypeMapper {
+
         @ValueMappings({
-                @ValueMapping(source = "PRODUCT_REGISTERED", target = "REGISTERED"),
-                @ValueMapping(source = "PRODUCT_NAME_UPDATED", target = "NAME_UPDATED"),
-                @ValueMapping(source = "PRODUCT_DESCRIPTION_UPDATED", target = "DESCRIPTION_UPDATED"),
-                @ValueMapping(source = "PRODUCT_RETIRED", target = "RETIRED")
+            @ValueMapping(source = "PRODUCT_REGISTERED", target = "REGISTERED"),
+            @ValueMapping(source = "PRODUCT_NAME_UPDATED", target = "NAME_UPDATED"),
+            @ValueMapping(source = "PRODUCT_DESCRIPTION_UPDATED", target = "DESCRIPTION_UPDATED"),
+            @ValueMapping(source = "PRODUCT_RETIRED", target = "RETIRED")
         })
         ProductViewDtoEventType toDto(ProductEventType event);
     }

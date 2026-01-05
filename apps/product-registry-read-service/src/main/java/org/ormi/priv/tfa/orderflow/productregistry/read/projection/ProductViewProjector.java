@@ -22,117 +22,140 @@ import org.ormi.priv.tfa.orderflow.kernel.product.views.ProductView.ProductViewE
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * TODO: Complete Javadoc
+ * Projecteur pour les événements liés aux produits.
+ *
+ * <p>
+ * Cette classe implémente le {@link Projector} pour transformer les événements
+ * du domaine {@link ProductEventV1Envelope} en vues de lecture {@link ProductView}.
+ * Elle applique les règles de projection pour chaque type d'événement : création,
+ * mise à jour de nom, mise à jour de description, et retrait du produit.
+ * </p>
+ *
+ * <p>
+ * La projection inclut :
+ * <ul>
+ *   <li>Création d'une nouvelle vue si le produit est enregistré.</li>
+ *   <li>Application des mises à jour de nom et de description uniquement si le produit est actif.</li>
+ *   <li>Retrait du produit en changeant le statut et en ajoutant un événement.</li>
+ *   <li>Gestion des versions pour ignorer les événements obsolètes (no-op).</li>
+ *   <li>Fusion et tri chronologique des événements pour conserver l'historique complet.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Cette classe est utilisée par le {@link ProjectionDispatcher} pour mettre à jour
+ * les vues de lecture dans la base {@code read_product_registry}.
+ * </p>
  */
 @ApplicationScoped
 public class ProductViewProjector implements Projector<ProductView, ProductEventV1Envelope<?>> {
 
-	@Override
-	public ProjectionResult<ProductView> project(Optional<ProductView> current, ProductEventV1Envelope<?> ev) {
-		return switch (ev) {
-			case ProductRegisteredEnvelope pre -> handleProjection(current, pre);
-			case ProductRetiredEnvelope pre -> handleProjection(current, pre);
-			case ProductNameUpdatedEnvelope pre -> handleProjection(current, pre);
-			case ProductDescriptionUpdatedEnvelope pre -> handleProjection(current, pre);
-			default -> ProjectionResult.failed("Unimplemented event type");
-		};
-	}
+    @Override
+    public ProjectionResult<ProductView> project(Optional<ProductView> current, ProductEventV1Envelope<?> ev) {
+        return switch (ev) {
+            case ProductRegisteredEnvelope pre -> handleProjection(current, pre);
+            case ProductRetiredEnvelope pre -> handleProjection(current, pre);
+            case ProductNameUpdatedEnvelope pre -> handleProjection(current, pre);
+            case ProductDescriptionUpdatedEnvelope pre -> handleProjection(current, pre);
+            default -> ProjectionResult.failed("Unimplemented event type");
+        };
+    }
 
-	private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
-			ProductRegisteredEnvelope ev) {
-		if (current.isPresent() && current.get().getStatus() == ProductLifecycle.ACTIVE) {
-			return ProjectionResult.failed("Product already exists and is active");
-		}
-		ProductView newView = ProductView.Builder()
-				.id(new ProductId(ev.event().productId().value()))
-				.version(ev.sequence())
-				.skuId(new SkuId(ev.event().payload().skuId()))
-				.name(ev.event().payload().name())
-				.description(ev.event().payload().description())
-				.status(ProductLifecycle.ACTIVE)
-				.events(List.of(
-						new ProductViewEvent(
-								ProductEventType.PRODUCT_REGISTERED,
-								ev.timestamp(),
-								ev.sequence(),
-								ev.event().payload())))
-				.catalogs(Collections.emptyList())
-				.createdAt(ev.timestamp())
-				.updatedAt(ev.timestamp())
-				.build();
-		return ProjectionResult.projected(newView);
-	}
+    private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
+            ProductRegisteredEnvelope ev) {
+        if (current.isPresent() && current.get().getStatus() == ProductLifecycle.ACTIVE) {
+            return ProjectionResult.failed("Product already exists and is active");
+        }
+        ProductView newView = ProductView.Builder()
+                .id(new ProductId(ev.event().productId().value()))
+                .version(ev.sequence())
+                .skuId(new SkuId(ev.event().payload().skuId()))
+                .name(ev.event().payload().name())
+                .description(ev.event().payload().description())
+                .status(ProductLifecycle.ACTIVE)
+                .events(List.of(
+                        new ProductViewEvent(
+                                ProductEventType.PRODUCT_REGISTERED,
+                                ev.timestamp(),
+                                ev.sequence(),
+                                ev.event().payload())))
+                .catalogs(Collections.emptyList())
+                .createdAt(ev.timestamp())
+                .updatedAt(ev.timestamp())
+                .build();
+        return ProjectionResult.projected(newView);
+    }
 
-	private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current, ProductRetiredEnvelope ev) {
-		if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
-			return ProjectionResult.failed("Already retired or never existed");
-		}
-		if (ev.sequence() <= current.get().getVersion()) {
-			return ProjectionResult.noOp("Stale retirement ignored");
-		}
-		ProductView newView = ProductView.Builder()
-				.with(current.get())
-				.version(ev.sequence())
-				.status(ProductLifecycle.RETIRED)
-				.events(mergeEvents(current.get().getEvents(),
-						new ProductViewEvent(
-							ProductEventType.PRODUCT_RETIRED,
-							ev.timestamp(),
-							ev.sequence(),
-							ev.event().payload())))
-				.build();
-		return ProjectionResult.projected(newView);
-	}
+    private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current, ProductRetiredEnvelope ev) {
+        if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
+            return ProjectionResult.failed("Already retired or never existed");
+        }
+        if (ev.sequence() <= current.get().getVersion()) {
+            return ProjectionResult.noOp("Stale retirement ignored");
+        }
+        ProductView newView = ProductView.Builder()
+                .with(current.get())
+                .version(ev.sequence())
+                .status(ProductLifecycle.RETIRED)
+                .events(mergeEvents(current.get().getEvents(),
+                        new ProductViewEvent(
+                                ProductEventType.PRODUCT_RETIRED,
+                                ev.timestamp(),
+                                ev.sequence(),
+                                ev.event().payload())))
+                .build();
+        return ProjectionResult.projected(newView);
+    }
 
-	private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
-			ProductNameUpdatedEnvelope ev) {
-		if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
-			return ProjectionResult.failed("Cannot update name of non-existent or retired product");
-		}
-		if (ev.sequence() <= current.get().getVersion()) {
-			return ProjectionResult.noOp("Stale name update ignored");
-		}
-		ProductView newView = ProductView.Builder()
-				.with(current.get())
-				.version(ev.sequence())
-				.name(ev.event().payload().newName())
-				.events(mergeEvents(current.get().getEvents(),
-						new ProductViewEvent(
-							ProductEventType.PRODUCT_NAME_UPDATED,
-							ev.timestamp(),
-							ev.sequence(),
-							ev.event().payload())))
-				.build();
-		return ProjectionResult.projected(newView);
-	}
+    private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
+            ProductNameUpdatedEnvelope ev) {
+        if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
+            return ProjectionResult.failed("Cannot update name of non-existent or retired product");
+        }
+        if (ev.sequence() <= current.get().getVersion()) {
+            return ProjectionResult.noOp("Stale name update ignored");
+        }
+        ProductView newView = ProductView.Builder()
+                .with(current.get())
+                .version(ev.sequence())
+                .name(ev.event().payload().newName())
+                .events(mergeEvents(current.get().getEvents(),
+                        new ProductViewEvent(
+                                ProductEventType.PRODUCT_NAME_UPDATED,
+                                ev.timestamp(),
+                                ev.sequence(),
+                                ev.event().payload())))
+                .build();
+        return ProjectionResult.projected(newView);
+    }
 
-	private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
-			ProductDescriptionUpdatedEnvelope ev) {
-		if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
-			return ProjectionResult.failed("Cannot update description of non-existent or retired product");
-		}
-		if (ev.sequence() <= current.get().getVersion()) {
-			return ProjectionResult.noOp("Stale description update ignored");
-		}
-		ProductView newView = ProductView.Builder()
-				.with(current.get())
-				.version(ev.sequence())
-				.description(ev.event().payload().newDescription())
-				.events(mergeEvents(current.get().getEvents(),
-						new ProductViewEvent(
-							ProductEventType.PRODUCT_DESCRIPTION_UPDATED,
-							ev.timestamp(),
-							ev.sequence(),
-							ev.event().payload())))
-				.build();
-		return ProjectionResult.projected(newView);
-	}
+    private ProjectionResult<ProductView> handleProjection(Optional<ProductView> current,
+            ProductDescriptionUpdatedEnvelope ev) {
+        if (current.isEmpty() || current.get().getStatus() != ProductLifecycle.ACTIVE) {
+            return ProjectionResult.failed("Cannot update description of non-existent or retired product");
+        }
+        if (ev.sequence() <= current.get().getVersion()) {
+            return ProjectionResult.noOp("Stale description update ignored");
+        }
+        ProductView newView = ProductView.Builder()
+                .with(current.get())
+                .version(ev.sequence())
+                .description(ev.event().payload().newDescription())
+                .events(mergeEvents(current.get().getEvents(),
+                        new ProductViewEvent(
+                                ProductEventType.PRODUCT_DESCRIPTION_UPDATED,
+                                ev.timestamp(),
+                                ev.sequence(),
+                                ev.event().payload())))
+                .build();
+        return ProjectionResult.projected(newView);
+    }
 
-	private static List<ProductViewEvent> mergeEvents(List<ProductViewEvent> existingEvents,
-			ProductViewEvent newEvent) {
-		return Stream.concat(existingEvents.stream(),
-				Stream.of(newEvent))
-				.sorted(Comparator.comparingLong(ProductViewEvent::getSequence))
-				.toList();
-	}
+    private static List<ProductViewEvent> mergeEvents(List<ProductViewEvent> existingEvents,
+            ProductViewEvent newEvent) {
+        return Stream.concat(existingEvents.stream(),
+                Stream.of(newEvent))
+                .sorted(Comparator.comparingLong(ProductViewEvent::getSequence))
+                .toList();
+    }
 }

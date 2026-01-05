@@ -28,9 +28,31 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 /**
- * TODO: Complete Javadoc
+ * Resource REST pour exposer les opérations RPC du module store
+ * sur les produits.
+ *
+ * <p>
+ * Cette ressource sert d'interface entre les clients et les services
+ * ProductRegistry et ProductRegistryDomain. Elle permet de :
+ * <ul>
+ *   <li>Enregistrer un nouveau produit</li>
+ *   <li>Mettre à jour un produit existant (nom et/ou description)</li>
+ *   <li>Retirer un produit</li>
+ *   <li>Consulter les détails d'un produit</li>
+ *   <li>Rechercher des produits avec pagination</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Chaque méthode effectue une validation de base sur les données entrantes
+ * et retourne le code HTTP approprié :
+ * <ul>
+ *   <li>{@code 200 OK} en cas de succès</li>
+ *   <li>{@code 400 BAD REQUEST} pour des données invalides</li>
+ *   <li>{@code 500 INTERNAL SERVER ERROR} si le service en aval échoue</li>
+ * </ul>
+ * </p>
  */
-
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 public class ProductRpcResource {
@@ -42,6 +64,8 @@ public class ProductRpcResource {
     @RestClient
     private ProductRegistryDomainService productRegistryDomainService;
 
+    
+    
     @POST
     @Path("/registerProduct")
     @Consumes(MediaType.APPLICATION_JSON)

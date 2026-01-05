@@ -16,16 +16,27 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Implémentation JPA du repository des produits.
+ * <p>
+ * Utilise Panache et les mappers pour gérer la persistance des objets
+ * de domaine {@link Product} dans la base de données.
+ * </p>
  */
-
 @ApplicationScoped
 public class JpaProductRepository implements PanacheRepositoryBase<ProductEntity, UUID>, ProductRepository {
 
-    ProductJpaMapper mapper;
-    ProductIdMapper productIdMapper;    
-    SkuIdMapper skuIdMapper;
+    private final ProductJpaMapper mapper;
+    private final ProductIdMapper productIdMapper;    
+    private final SkuIdMapper skuIdMapper;
 
+    /**
+     * Constructeur avec injection des mappers nécessaires à la conversion
+     * entre entités JPA et objets de domaine.
+     *
+     * @param mapper mappe les entités JPA vers les objets de domaine
+     * @param productIdMapper mappe les identifiants de produit
+     * @param skuIdMapper mappe les identifiants SKU
+     */
     @Inject
     public JpaProductRepository(ProductJpaMapper mapper, ProductIdMapper productIdMapper, SkuIdMapper skuIdMapper) {
         this.mapper = mapper;
@@ -33,6 +44,15 @@ public class JpaProductRepository implements PanacheRepositoryBase<ProductEntity
         this.skuIdMapper = skuIdMapper;
     }
 
+    /**
+     * Sauvegarde un produit en base.
+     * <p>
+     * Si le produit existe déjà, l’entité est mise à jour ; sinon,
+     * une nouvelle entité est créée.
+     * </p>
+     *
+     * @param product produit à sauvegarder
+     */
     @Override
     @Transactional
     public void save(Product product) {
@@ -45,12 +65,24 @@ public class JpaProductRepository implements PanacheRepositoryBase<ProductEntity
                 });
     }
 
+    /**
+     * Recherche un produit par son identifiant.
+     *
+     * @param id identifiant du produit
+     * @return Optional contenant le produit si trouvé, sinon vide
+     */
     @Override
     public Optional<Product> findById(ProductId id) {
         return findByIdOptional(productIdMapper.map(id))
                 .map(mapper::toDomain);
     }
 
+    /**
+     * Vérifie si un produit existe pour un SKU donné.
+     *
+     * @param skuId identifiant SKU
+     * @return true si un produit avec ce SKU existe, false sinon
+     */
     @Override
     public boolean existsBySkuId(SkuId skuId) {
         return count("skuId", skuIdMapper.map(skuId)) > 0;

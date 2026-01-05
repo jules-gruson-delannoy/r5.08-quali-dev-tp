@@ -33,7 +33,21 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Poller partitionné pour traiter les messages de l’outbox produit.
+ * <p>
+ * Récupère périodiquement les messages prêts à être projetés depuis l’outbox,
+ * les répartit sur plusieurs partitions en fonction de l’aggregateId,
+ * et applique le {@link ProjectionDispatcher} pour mettre à jour les vues en lecture.
+ * </p>
+ * <p>
+ * Gère les retries, les blocages temporaires, et marque les messages comme échoués
+ * en cas de projection échouée ou d’erreur inattendue.
+ * </p>
+ * <p>
+ * Le nombre de partitions est basé sur le nombre de processeurs disponibles,
+ * et le poller démarre automatiquement au démarrage de l’application
+ * et s’arrête proprement lors de l’arrêt.
+ * </p>
  */
 
 @ApplicationScoped

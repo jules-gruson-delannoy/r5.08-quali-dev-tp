@@ -38,7 +38,7 @@ Les modules métier (comme product-registry-domain-service ou store-back) implé
 
 ## Tache 3 
 
-Je n'ai pas encore lint cette page.
+Il ne faut pas faire cette tâche
 
 # EXO 2 :
 

@@ -12,9 +12,24 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Implémentation JPA du {@link EventLogRepository} utilisant Panache pour
+ * persister les événements métier dans la base de données.
+ *
+ * <p>
+ * Chaque événement est converti en {@link EventLogEntity} via le {@link EventLogJpaMapper}
+ * et stocké dans la table {@code eventing.event_log}.
+ * </p>
+ *
+ * <p>
+ * Caractéristiques :
+ * <ul>
+ *   <li>Supporte la persistance transactionnelle via {@link Transactional}</li>
+ *   <li>Utilise l’injection CDI pour le mapper {@link EventLogJpaMapper} et l’ObjectMapper Jackson</li>
+ *   <li>Extends {@link PanacheRepository} pour bénéficier des méthodes utilitaires de Panache</li>
+ *   <li>Annoté {@link DefaultBean} pour permettre un remplacement éventuel par une autre implémentation</li>
+ * </ul>
+ * </p>
  */
-
 @ApplicationScoped
 @DefaultBean
 public class JpaEventLogRepository implements PanacheRepository<EventLogEntity>, EventLogRepository {
@@ -28,11 +43,23 @@ public class JpaEventLogRepository implements PanacheRepository<EventLogEntity>,
         this.objectMapper = objectMapper;
     }
 
-	@Override
+    /**
+     * Persiste un événement métier dans le journal (Event Log).
+     *
+     * <p>
+     * Convertit d’abord l’{@link EventEnvelope} en {@link EventLogEntity} via le mapper,
+     * puis le persiste en base de données via Panache.
+     * </p>
+     *
+     * @param eventLog L’événement métier enveloppé à persister
+     * @return L’entité {@link EventLogEntity} persistée
+     */
+    @Override
     @Transactional
-	public EventLogEntity append(EventEnvelope<?> eventLog) {
-		EventLogEntity entity = mapper.toEntity(eventLog, objectMapper);
-		persist(entity);
-		return entity;
-	}
+    public EventLogEntity append(EventEnvelope<?> eventLog) {
+        EventLogEntity entity = mapper.toEntity(eventLog, objectMapper);
+        persist(entity);
+        return entity;
+    }
 }
+

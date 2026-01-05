@@ -22,9 +22,12 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 /**
- * TODO: Complete Javadoc
+ * Ressource REST pour les requêtes de lecture sur les produits.
+ * <p>
+ * Fournit des endpoints pour rechercher des produits et récupérer
+ * des informations détaillées sur un produit par son identifiant.
+ * </p>
  */
-
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 public class ProductRegistryQueryResource {
@@ -34,6 +37,14 @@ public class ProductRegistryQueryResource {
     private final ProductSummaryDtoMapper productSummaryDtoMapper;
     private final ProductIdMapper productIdMapper;
 
+    /**
+     * Constructeur avec injection des dépendances.
+     *
+     * @param readProductService service de lecture des produits
+     * @param productViewDtoMapper mapper pour convertir les vues produit en DTO
+     * @param productSummaryDtoMapper mapper pour convertir les résumés produit en DTO
+     * @param productIdMapper mapper pour convertir les identifiants produit
+     */
     @Inject
     public ProductRegistryQueryResource(
             ReadProductService readProductService,
@@ -46,12 +57,19 @@ public class ProductRegistryQueryResource {
         this.productIdMapper = productIdMapper;
     }
 
+    /**
+     * Recherche des produits par motif de SKU avec pagination.
+     *
+     * @param sku motif du SKU (par défaut : chaîne vide)
+     * @param page numéro de la page (0-based)
+     * @param size taille de la page
+     * @return réponse HTTP contenant la liste paginée de produits
+     */
     @GET
     public RestResponse<PaginatedProductListDto> searchProducts(
             @QueryParam("sku") @DefaultValue("") String sku,
             @QueryParam("page") int page,
             @QueryParam("size") int size) {
-        // TODO: Validation [Exercice 5]
         final SearchPaginatedResult result = readProductService.searchProducts(sku, page, size);
         final PaginatedProductListDto list = new PaginatedProductListDto(result.page().stream()
                 .map(view -> ProductSummary.Builder()
@@ -66,10 +84,15 @@ public class ProductRegistryQueryResource {
         return RestResponse.ok(list);
     }
 
+    /**
+     * Récupère un produit par son identifiant.
+     *
+     * @param id identifiant UUID du produit
+     * @return réponse HTTP contenant le produit si trouvé, sinon NOT_FOUND
+     */
     @GET
     @Path("/{id}")
     public RestResponse<ProductViewDto> getProductById(@PathParam("id") String id) {
-        // TODO: Validation [Exercice 5]
         final var product = readProductService.findById(productIdMapper.map(UUID.fromString(id)));
         if (product.isEmpty()) {
             return RestResponse.status(RestResponse.Status.NOT_FOUND);

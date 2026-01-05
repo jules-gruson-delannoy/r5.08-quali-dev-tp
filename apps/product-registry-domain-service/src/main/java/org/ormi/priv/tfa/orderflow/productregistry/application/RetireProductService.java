@@ -15,18 +15,31 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 /**
- * TODO: Complete Javadoc
+ * Service d’application pour retirer un produit existant.
+ * <p>
+ * Cette classe récupère le produit par son identifiant, 
+ * exécute l’opération de retrait, enregistre l’événement
+ * de domaine et publie un événement dans l’outbox.
+ * </p>
  */
 @ApplicationScoped
 public class RetireProductService {
 
     @Inject
     ProductRepository repository;
+
     @Inject
     EventLogRepository eventLog;
+
     @Inject
     OutboxRepository outbox;
 
+    /**
+     * Retire un produit existant.
+     *
+     * @param cmd commande contenant l’identifiant du produit à retirer
+     * @throws IllegalArgumentException si le produit n’est pas trouvé
+     */
     @Transactional
     public void retire(RetireProductCommand cmd) throws IllegalArgumentException {
         Product product = repository.findById(cmd.productId())
