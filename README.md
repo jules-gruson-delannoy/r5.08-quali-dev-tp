@@ -91,3 +91,48 @@ client : code pour consommer des services externes (API externes, microservices)
 model : objets métier ou DTO partagés (entités, data transfer objects).
 
 En résumé : infra = technique, application = logique, jpa/web/client = interface, model = données.
+
+# EXO 4 :
+## Tache 1 Questions sur la base de code
+
+**Q1**
+
+**Q2**
+
+**Q3**
+
+**Q4**
+
+**Q5**
+
+**Q6**
+
+## Tache 2 Questions concernant l'Outboxing
+
+**Q1**
+
+**Q2**
+
+**Q3**
+
+**Q4**
+
+## Tache 3 Questions concernant le journal d'évènements
+
+**Q1**
+
+**Q2**
+
+**Q3**
+
+## Tache 4 Limites de CQRS
+
+**Q1**
+
+**Q2**
+
+**Q3**
+
+**Q4**
+
+**Q5**
