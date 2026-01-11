@@ -15,6 +15,7 @@ public interface Projector<S, E extends EventEnvelope<? extends DomainEvent>> {
      * 
      * @param current the current state
      * @param ev      the event to project
+     * @param <S> le type de l'état ou de la vue matérialisée résultant de la projection des événements.
      * @return the projected state
      */
     ProjectionResult<S> project(Optional<S> current, E ev);
