@@ -1,3 +1,5 @@
+Bonjour Monsieur, j'ai répondu à tout les éxos sur ce readme.md
+
 # **EXO 1:**
 
 ## Tache 1 Question
